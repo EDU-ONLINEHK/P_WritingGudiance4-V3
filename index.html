@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作文大綱互動網頁</title>
+    <style>
+        /* --------------------------------------------------
+           Core styles (Neubrutalism)
+        -------------------------------------------------- */
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #f3f4f6; /* light gray */
+            color: #111827;
+        }
+        a { color: inherit; text-decoration: none; }
+
+        .card-brutal {
+            border: 4px solid #000;
+            box-shadow: 8px 8px 0 #000;
+            background: #fff;
+        }
+        .btn-brutal {
+            border: 2px solid #000;
+            box-shadow: 4px 4px 0 #000;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            background: #fde68a;
+        }
+        .btn-brutal:hover {
+            filter: brightness(0.95);
+        }
+        .btn-brutal:active {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+
+        /* Layout: sidebar + main */
+        #sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 260px;
+            background: #fff;
+            border-right: 4px solid #000;
+            padding: 1rem;
+            transition: width 0.3s ease;
+            z-index: 20;
+        }
+        #sidebar.collapsed {
+            width: 96px;
+        }
+        #sidebar-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #nav-toggle {
+            align-self: flex-end;
+            border: 2px solid #000;
+            background: #fbbf24;
+            padding: 0.25rem;
+            cursor: pointer;
+            margin-bottom: 0.5rem;
+        }
+        #nav-toggle svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .group-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .group-selector button {
+            flex: 1;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.9rem;
+        }
+        .group-selector button.active {
+            background: #facc15;
+        }
+
+        .font-size-container {
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+        }
+        .font-size-container input[type="range"] {
+            width: 100%;
+        }
+
+        #highlight-toggle {
+            border: 2px solid #000;
+            padding: 0.25rem;
+            background: #e5e7eb;
+            cursor: pointer;
+            margin-bottom: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #highlight-toggle svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 0.5rem;
+        }
+        .sidebar-nav button {
+            width: 100%;
+            text-align: left;
+            padding: 0.4rem 0.5rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border-radius: 0.25rem;
+            margin-bottom: 0.25rem;
+        }
+        .sidebar-nav button:hover {
+            background: #fee2e2;
+        }
+        .sidebar-nav button.active {
+            background: #fecaca;
+            border-left: 4px solid #000;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 1.5rem 1.5rem 3rem;
+            transition: margin-left 0.3s ease;
+        }
+        .main-content.compact {
+            margin-left: 96px;
+        }
+
+        .section {
+            margin-top: 1.5rem;
+            padding: 1rem 1.25rem;
+        }
+        .section h2 {
+            margin-top: 0;
+            margin-bottom: 0.75rem;
+        }
+
+        /* Floating timer */
+        #floating-timer {
+            position: fixed;
+            right: 24px;
+            bottom: 80px;
+            width: 64px;
+            height: 64px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            cursor: grab;
+            box-shadow: 4px 4px 0 #000;
+            border: 2px solid #000;
+            z-index: 50;
+        }
+        #floating-timer.expanded {
+            width: 280px;
+            height: auto;
+            border-radius: 0.75rem;
+            box-shadow: 8px 8px 0 #000;
+            flex-direction: column;
+            cursor: default;
+        }
+        .floating-timer-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.4rem 0.6rem;
+            background: #e5e7eb;
+            border-bottom: 3px solid #000;
+            border-radius: 0.75rem 0.75rem 0 0;
+        }
+        .floating-timer-header span {
+            font-weight: 900;
+            font-size: 0.95rem;
+        }
+        .timer-icon-btn {
+            border: 2px solid #000;
+            background: #fbbf24;
+            padding: 0.2rem;
+            cursor: pointer;
+        }
+        .timer-icon-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+        .timer-progress {
+            width: 100%;
+            height: 4px;
+            background: #e5e7eb;
+            border-top: 3px solid #000;
+        }
+        .timer-progress-fill {
+            height: 4px;
+            width: 100%;
+            border-top: 3px solid #000;
+        }
+        #timer-display {
+            font-size: 2.2rem;
+            text-align: center;
+            padding: 0.4rem 0;
+            font-weight: 900;
+        }
+        .timer-controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.4rem;
+            padding-bottom: 0.6rem;
+        }
+        .timer-controls button {
+            font-size: 0.85rem;
+            padding: 0.25rem 0.6rem;
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out infinite;
+        }
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            25% { transform: translateX(-3px) rotate(-2deg); }
+            75% { transform: translateX(3px) rotate(2deg); }
+        }
+
+        /* Checklist */
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 0.4rem;
+            font-size: 0.9rem;
+        }
+        .checklist-item input {
+            margin-right: 0.5rem;
+            margin-top: 0.1rem;
+        }
+
+        /* Learning objectives accordion */
+        .lo-accordion {
+            margin-top: 1rem;
+            border: 4px solid #000;
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.2);
+            background: #fff;
+        }
+        .lo-accordion-header {
+            padding: 0.5rem 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 900;
+            background: #e0e7ff;
+            border-bottom: 4px solid #000;
+        }
+        .lo-accordion-header span {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .lo-accordion-body {
+            padding: 0.75rem;
+        }
+        .lo-item {
+            display: flex;
+            gap: 0.6rem;
+            padding: 0.4rem 0.5rem;
+            border: 2px solid #000;
+            margin-bottom: 0.4rem;
+        }
+        .lo-item-tag {
+            padding: 0.15rem 0.4rem;
+            font-size: 0.75rem;
+            font-weight: 900;
+            border: 2px solid #000;
+            white-space: nowrap;
+        }
+        .lo-item-content h4 {
+            margin: 0;
+            font-size: 0.95rem;
+        }
+        .lo-item-content p {
+            margin: 0.1rem 0 0;
+            font-size: 0.85rem;
+        }
+
+        /* Quiz */
+        #quiz-content button {
+            font-size: 0.9rem;
+        }
+
+        /* Simple utility */
+        .flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        .items-center { align-items: center; }
+        .gap-2 { gap: 0.5rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-4 { margin-top: 1rem; }
+        .text-sm { font-size: 0.875rem; }
+        .font-bold { font-weight: 700; }
+        .font-black { font-weight: 900; }
+        .w-full { width: 100%; }
+        .hidden { display: none; }
+
+        footer {
+            text-align: center;
+            padding: 1.5rem 0 0.5rem;
+            border-top: 4px solid #000;
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            color: #6b7280;
+            background: #fff;
+        }
+
+        @media (max-width: 768px) {
+            #sidebar {
+                position: fixed;
+                width: 220px;
+                z-index: 30;
+            }
+            #sidebar.collapsed {
+                width: 72px;
+            }
+            .main-content {
+                margin-left: 72px;
+                padding: 1rem 0.75rem 3rem;
+            }
+            .main-content.compact {
+                margin-left: 72px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+        <div id="sidebar-content">
+            <button id="nav-toggle" aria-label="toggle sidebar">
+                <svg id="chevron-open" xmlns="http://www.w3.org/2000/svg" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 5l7 7-7 7"/>
+                </svg>
+                <svg id="chevron-closed" class="hidden" xmlns="http://www.w3.org/2000/svg" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15 19l-7-7 7-7"/>
+                </svg>
+            </button>
+
+            <!-- Group selector -->
+            <div class="group-selector">
+                <button id="group-A" class="btn-brutal active" data-group="A">A 組</button>
+                <button id="group-B" class="btn-brutal" data-group="B">B 組</button>
+            </div>
+
+            <!-- Font slider -->
+            <div class="font-size-container">
+                <div class="flex justify-between items-center mb-2">
+                    <span>字體大小</span>
+                    <span id="font-size-label" class="text-sm">20px</span>
+                </div>
+                <input type="range" id="fontSlider" min="14" max="30" value="20">
+            </div>
+
+            <!-- Highlight toggle -->
+            <button id="highlight-toggle" title="顯示/隱藏重點">
+                <!-- eye icon default -->
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274
+                           4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+            </button>
+
+            <!-- Section nav -->
+            <nav class="sidebar-nav" id="sidebar-nav"></nav>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main id="main-content" class="main-content">
+        <header class="card-brutal section" style="margin-top: 0;">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="font-black" style="margin:0 0 0.3rem;">作文大綱互動網頁（靜態克隆版）</h1>
+                    <p class="text-sm" style="margin:0;">
+                        模仿原版 React + Tailwind 互動網頁，以純 HTML/CSS/JS 實作。
+                    </p>
+                </div>
+                <div class="text-sm font-bold">
+                    <span id="current-group-label">當前模式：A 組挑戰</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Timer -->
+        <div id="floating-timer">
+            <!-- 收合狀態只顯示圖示，展開內容由 JS 控制 -->
+            <svg id="timer-icon-mini" xmlns="http://www.w3.org/2000/svg" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 8v4l3 3m1-9V5a1 1 0 00-1-1h-1V3a1 1 0 10-2 0v1H9a1 1 0 00-1 1v1m11
+                       4a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+
+        <!-- Sections -->
+        <section id="intro" class="section card-brutal">
+            <h2 class="font-black text-xl">👩‍🏫 教師引導</h2>
+            <p id="intro-text">
+                這一頁示範如何用大綱思維寫作：大綱就像
+                <span class="hl">Google Maps 的路線導航</span>，先想清楚「要去哪裡」，
+                才不會寫到一半迷路、沒重點。
+            </p>
+            <div id="lo-accordion-root"></div>
+        </section>
+
+        <section id="prompt" class="section card-brutal">
+            <h2 class="font-black text-xl">📝 題目拆解（Prompt Game 簡化示例）</h2>
+            <div id="prompt-content"></div>
+        </section>
+
+        <section id="structure" class="section card-brutal">
+            <h2 class="font-black text-xl">🚀 大綱長相</h2>
+            <p>
+                這裡可以放「段落結構圖」、「開頭／中段／結尾示範」等靜態內容。你可以依
+                照實際教案替換文字與圖示。
+            </p>
+        </section>
+
+        <section id="inspiration" class="section card-brutal">
+            <h2 class="font-black text-xl">💡 靈感急救</h2>
+            <p>
+                若學生沒有題材，可以提供「生活事件清單」、「感受詞庫」或「常見立意方向」
+                供參考。此區以純靜態內容配合字體大小與高亮控制即可。
+            </p>
+        </section>
+
+        <section id="demo" class="section card-brutal">
+            <h2 class="font-black text-xl">🔥 實戰示範</h2>
+            <p>
+                這裡放一篇示範大綱或短文，搭配顏色區塊標註「經歷」「目標」「反思」「昇華」
+                等部分，透過
+                <span class="hl">高亮標記</span>
+                幫助學生視覺化結構。
+            </p>
+        </section>
+
+        <section id="checklist" class="section card-brutal">
+            <h2 class="font-black text-xl">✅ 自檢清單</h2>
+            <div id="checklist-content"></div>
+        </section>
+
+        <section id="quiz" class="section card-brutal">
+            <h2 class="font-black text-xl">🎮 互動測驗</h2>
+            <div id="quiz-content"></div>
+        </section>
+
+        <footer>
+            <p class="font-black">DSE 中文寫作加油站 – 靜態克隆示例</p>
+            <p>設計風格：Neubrutalism．可自由擴充更多遊戲與教材模組</p>
+        </footer>
+    </main>
+</div>
+
+<script>
+(function () {
+    // ---------------- Data Definitions ----------------
+    const CHECKLIST_ITEMS = [
+        "拒絕只寫口號句：有沒有用具體畫面或動作表現感受？",
+        "「我很不開心」這類句子後面，有沒有說明原因？",
+        "目標是否具體可行，例如「每天練習 20 分鐘」而不是「我要變厲害」？",
+        "有沒有抓住題目關鍵詞（時間、人物、限制）來選材？",
+        "經歷與目標之間，有沒有清楚的因果關係？"
+    ];
+
+    const GAME_QUESTIONS_A = [
+        {id: 1, text: "我很傷心。", type: "vague", explanation: "太籠統！沒有畫面感，讀者感受不到你的心情。"},
+        {id: 2, text: "眼淚在眼睫打轉，我咬著嘴唇不讓它流下來。", type: "concrete", explanation: "很好！有動作（咬嘴唇）和畫面（眼淚打轉）。"},
+        {id: 3, text: "那天的雨下得很大。", type: "vague", explanation: "「很大」是多大？每個人想像的都不一樣。"},
+        {id: 4, text: "冰冷的雨水打在臉上，像針刺一樣痛。", type: "concrete", explanation: "具體！運用了觸覺和比喻，畫面感強。"},
+        {id: 5, text: "我要做個負責任的人。", type: "vague", explanation: "空話！怎樣才算負責？沒有具體行動。"},
+        {id: 6, text: "我會主動承擔清洗碗碟的工作，不再推卸給媽媽。", type: "concrete", explanation: "有明確的行動（洗碗）和改變。"}
+    ];
+    const GAME_QUESTIONS_B = JSON.parse(JSON.stringify(GAME_QUESTIONS_A));
+
+    const PROMPT_INFO_B = {
+        fullTitle: "因為這一天的經歷，我定下一個目標，就是要決心改掉衝動的性格。",
+        requirements: [
+            "字數：不得少於 250 字",
+            "人稱：第一人稱「我」",
+            "重點定義：「衝動」指情緒激動而未經理性思考的行為"
+        ],
+        gameWords: [
+            { id: 1, text: "因為", important: false },
+            { id: 2, text: "這一天", important: true },
+            { id: 3, text: "的", important: false },
+            { id: 4, text: "經歷", important: true },
+            { id: 5, text: "，", important: false },
+            { id: 6, text: "我", important: true },
+            { id: 7, text: "定下", important: false },
+            { id: 8, text: "一個", important: true },
+            { id: 9, text: "目標", important: true },
+            { id: 10, text: "。", important: false }
+        ],
+        gameLogicQ: "為什麼題目要強調「因為」這一天的經歷？",
+        gameConstraintQ: "題目規定「一個」目標，如果不小心寫了兩個會怎樣？"
+    };
+
+    const LEARNING_OBJECTIVES = [
+        { level: "Lv.1", title: "基礎能力：審題精準", desc: "能準確理解題目要求，選取符合「某一天」「一個目標」限制的素材，不離題。", required: "ALL" },
+        { level: "Lv.2", title: "準備能力：具體描寫", desc: "善用五感描寫與心理刻畫，讓事件過程生動具體，拒絕流水帳。", required: "ALL" },
+        { level: "Lv.3", title: "核心能力：邏輯貫通", desc: "能建立「經歷」與「目標」之間合理的因果關係，教訓與改變邏輯自洽。", required: "ALL" },
+        { level: "Lv.4", title: "挑戰目標：深度昇華", desc: "能從具體事件中提煉出深刻的人生道理或價值觀，引發讀者共鳴。", required: "A_ONLY" }
+    ];
+
+    const SECTIONS_A = [
+        {id: "intro",       title: "👩‍🏫 教師引導"},
+        {id: "prompt",      title: "📝 題目拆解"},
+        {id: "structure",   title: "🚀 大綱長相"},
+        {id: "inspiration", title: "💡 靈感急救"},
+        {id: "demo",        title: "🔥 實戰示範"},
+        {id: "checklist",   title: "✅ 自檢清單"},
+        {id: "quiz",        title: "🎮 互動測驗"}
+    ];
+    const SECTIONS_B = SECTIONS_A; // 如未來 B 組要不同章節，可分開定義
+
+    const QUIZ_QUESTIONS_A = [
+        {
+            id: 1,
+            question: "題目寫「因為這一天的經歷」，下面哪一種素材最適合？",
+            options: [
+                { text: "從小到大所有考試的經歷", isCorrect: false },
+                { text: "某一天在球場輸掉比賽的經歷", isCorrect: true },
+                { text: "未來想像自己成為名人的故事", isCorrect: false },
+                { text: "家人三年前旅行的回憶", isCorrect: false }
+            ],
+            explanation: "關鍵在「這一天」與「經歷」，素材應聚焦在一個具體日子的事件。"
+        },
+        {
+            id: 2,
+            question: "若文章主題是「改掉衝動」，下面哪個做法最貼題？",
+            options: [
+                { text: "決定每天早起運動。", isCorrect: false },
+                { text: "遇到不滿時深呼吸三下，再決定要不要回應。", isCorrect: true },
+                { text: "努力存錢買新手機。", isCorrect: false },
+                { text: "考慮轉班到另一所學校。", isCorrect: false }
+            ],
+            explanation: "題目的目標是「改掉衝動的性格」，應寫出與情緒管理、行為控制相關的行動。"
+        }
+    ];
+    const QUIZ_QUESTIONS_B = QUIZ_QUESTIONS_A;
+
+    // ---------------- State ----------------
+    const state = {
+        activeGroup: "A",
+        fontSize: 20,
+        showHighlights: true,
+        isNavOpen: true,
+
+        // Concrete vs Vague Game
+        cvIndex: 0,
+        cvScore: 0,
+
+        // Timer
+        timerExpanded: false,
+        timerTotalSeconds: 0,
+        timerLeft: 0,
+        timerRunning: false,
+        timerInterval: null,
+        timerDragging: false,
+        timerDragOffset: {x: 0, y: 0},
+
+        // Checklist
+        checklistState: {},
+
+        // Quiz
+        quizIndex: 0,
+        quizScore: 0,
+        quizFinished: false,
+        quizSelectedIndex: null
+    };
+
+    // ---------------- Helpers ----------------
+    const $ = (id) => document.getElementById(id);
+    const $qs = (sel) => document.querySelector(sel);
+    const $qsa = (sel) => document.querySelectorAll(sel);
+
+    function scrollToSection(id) {
+        const el = $(id);
+        if (!el) return;
+        el.scrollIntoView({behavior: "smooth"});
+    }
+
+    function saveChecklist() {
+        localStorage.setItem(
+            `dse_checklist_${state.activeGroup}`,
+            JSON.stringify(state.checklistState)
+        );
+    }
+    function loadChecklist() {
+        const s = localStorage.getItem(`dse_checklist_${state.activeGroup}`);
+        state.checklistState = s ? JSON.parse(s) : {};
+    }
+
+    // ---------------- Sidebar ----------------
+    function renderSidebar() {
+        const nav = $("sidebar-nav");
+        nav.innerHTML = "";
+        const sections = state.activeGroup === "A" ? SECTIONS_A : SECTIONS_B;
+        sections.forEach(sec => {
+            const btn = document.createElement("button");
+            btn.textContent = sec.title;
+            btn.dataset.target = sec.id;
+            btn.addEventListener("click", () => {
+                $qsa(".sidebar-nav button").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                scrollToSection(sec.id);
+            });
+            nav.appendChild(btn);
+        });
+        // 初始 active
+        const firstBtn = nav.querySelector("button");
+        if (firstBtn) firstBtn.classList.add("active");
+    }
+
+    function updateLayoutForSidebar() {
+        const main = $("main-content");
+        if (state.isNavOpen) {
+            $("sidebar").classList.remove("collapsed");
+            main.classList.remove("compact");
+            $("chevron-open").classList.remove("hidden");
+            $("chevron-closed").classList.add("hidden");
+        } else {
+            $("sidebar").classList.add("collapsed");
+            main.classList.add("compact");
+            $("chevron-open").classList.add("hidden");
+            $("chevron-closed").classList.remove("hidden");
+        }
+    }
+
+    // ---------------- Font & highlight ----------------
+    function applyFontSize() {
+        document.body.style.fontSize = `${state.fontSize}px`;
+        $("font-size-label").textContent = `${state.fontSize}px`;
+    }
+
+    function applyHighlightVisibility() {
+        const hls = document.querySelectorAll(".hl");
+        hls.forEach(el => {
+            if (state.showHighlights) {
+                el.style.background = "#fde68a";
+                el.style.border = "2px solid #000";
+                el.style.padding = "0 0.15rem";
+            } else {
+                el.style.background = "transparent";
+                el.style.border = "none";
+                el.style.padding = "0";
+            }
+        });
+    }
+
+    // ---------------- Floating Timer ----------------
+    function formatTime(sec) {
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    }
+
+    function renderTimer(explicitRenderHeader = false) {
+        const timer = $("floating-timer");
+        timer.innerHTML = "";
+        if (!state.timerExpanded) {
+            // 縮小圖示
+            const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            icon.setAttribute("viewBox", "0 0 24 24");
+            icon.setAttribute("fill", "none");
+            icon.setAttribute("stroke", "currentColor");
+            icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4l3 3m1-9V5a1 1 0 00-1-1h-1V3a1 1 0 10-2 0v1H9a1
+                     1 0 00-1 1v1m11 4a9 9 0 11-18 0 9 9 0 0118 0z"/>`;
+            timer.appendChild(icon);
+            timer.classList.remove("expanded");
+            timer.onclick = () => {
+                state.timerExpanded = true;
+                if (!state.timerTotalSeconds) {
+                    state.timerTotalSeconds = 5 * 60;
+                    state.timerLeft = state.timerTotalSeconds;
+                }
+                renderTimer(true);
+            };
+        } else {
+            timer.classList.add("expanded");
+            // header
+            const header = document.createElement("div");
+            header.className = "floating-timer-header";
+            const title = document.createElement("span");
+            title.textContent = "計時器";
+            const closeBtn = document.createElement("button");
+            closeBtn.className = "timer-icon-btn";
+            closeBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                           d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            `;
+            closeBtn.onclick = (e) => {
+                e.stopPropagation();
+                state.timerExpanded = false;
+                renderTimer(true);
+            };
+            header.appendChild(title);
+            header.appendChild(closeBtn);
+            timer.appendChild(header);
+
+            // progress
+            const progress = document.createElement("div");
+            progress.className = "timer-progress";
+            const fill = document.createElement("div");
+            fill.id = "timer-progress-fill";
+            fill.className = "timer-progress-fill";
+            progress.appendChild(fill);
+            timer.appendChild(progress);
+
+            // display
+            const display = document.createElement("div");
+            display.id = "timer-display";
+            display.textContent = formatTime(state.timerLeft || state.timerTotalSeconds || 0);
+            timer.appendChild(display);
+
+            // controls
+            const controls = document.createElement("div");
+            controls.className = "timer-controls";
+            const btnStart = document.createElement("button");
+            btnStart.className = "btn-brutal";
+            btnStart.textContent = "開始";
+            const btnPause = document.createElement("button");
+            btnPause.className = "btn-brutal";
+            btnPause.textContent = "暫停";
+            const btnReset = document.createElement("button");
+            btnReset.className = "btn-brutal";
+            btnReset.textContent = "重置";
+            controls.appendChild(btnStart);
+            controls.appendChild(btnPause);
+            controls.appendChild(btnReset);
+            timer.appendChild(controls);
+
+            btnStart.onclick = (e) => {
+                e.stopPropagation();
+                startTimer();
+            };
+            btnPause.onclick = (e) => {
+                e.stopPropagation();
+                pauseTimer();
+            };
+            btnReset.onclick = (e) => {
+                e.stopPropagation();
+                resetTimer();
+            };
+        }
+    }
+
+    function updateTimerVisual() {
+        const fill = $("timer-progress-fill");
+        const display = $("timer-display");
+        if (!fill || !display) return;
+        display.textContent = formatTime(state.timerLeft);
+        const ratio = state.timerLeft / state.timerTotalSeconds;
+        if (ratio <= 0.2) {
+            fill.style.borderTopColor = "#ef4444";
+        } else if (ratio <= 0.5) {
+            fill.style.borderTopColor = "#f97316";
+        } else {
+            fill.style.borderTopColor = "#000000";
+        }
+    }
+
+    function beepOnce() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "square";
+            osc.frequency.value = 880;
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.15);
+        } catch (e) {
+            // ignore on unsupported browsers
+        }
+    }
+
+    function startTimer() {
+        if (state.timerRunning) return;
+        if (!state.timerTotalSeconds) {
+            state.timerTotalSeconds = 5 * 60;
+            state.timerLeft = state.timerTotalSeconds;
+        }
+        state.timerRunning = true;
+        $("floating-timer").classList.remove("animate-shake");
+        state.timerInterval = setInterval(() => {
+            state.timerLeft--;
+            if (state.timerLeft <= 0) {
+                state.timerLeft = 0;
+                updateTimerVisual();
+                clearInterval(state.timerInterval);
+                state.timerRunning = false;
+                beepOnce();
+                $("floating-timer").classList.add("animate-shake");
+            } else {
+                updateTimerVisual();
+            }
+        }, 1000);
+    }
+    function pauseTimer() {
+        if (!state.timerRunning) return;
+        state.timerRunning = false;
+        clearInterval(state.timerInterval);
+    }
+    function resetTimer() {
+        clearInterval(state.timerInterval);
+        state.timerRunning = false;
+        state.timerLeft = state.timerTotalSeconds || 5 * 60;
+        updateTimerVisual();
+        $("floating-timer").classList.remove("animate-shake");
+    }
+
+    function initTimerDrag() {
+        const el = $("floating-timer");
+        let startX = 0, startY = 0;
+        el.addEventListener("mousedown", (e) => {
+            if (state.timerExpanded) return; // 展開狀態不拖動
+            state.timerDragging = true;
+            startX = e.clientX - el.offsetLeft;
+            startY = e.clientY - el.offsetTop;
+        });
+        window.addEventListener("mousemove", (e) => {
+            if (!state.timerDragging) return;
+            const x = Math.max(0, Math.min(window.innerWidth - el.offsetWidth, e.clientX - startX));
+            const y = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, e.clientY - startY));
+            el.style.left = x + "px";
+            el.style.top = y + "px";
+        });
+        window.addEventListener("mouseup", () => {
+            state.timerDragging = false;
+        });
+    }
+
+    // ---------------- Concrete vs Vague Game (簡化版，放在 Prompt 區) ----------------
+    function renderConcreteVsVagueGame(container) {
+        const questions = state.activeGroup === "A" ? GAME_QUESTIONS_A : GAME_QUESTIONS_B;
+        const q = questions[state.cvIndex];
+        container.innerHTML = "";
+
+        const titleRow = document.createElement("div");
+        titleRow.className = "flex justify-between items-center mb-2";
+        const left = document.createElement("div");
+        left.textContent = "🔥 空泛 VS 具體：火眼金睛";
+        left.className = "font-black";
+        const right = document.createElement("div");
+        right.textContent = `${state.cvIndex + 1} / ${questions.length}`;
+        right.className = "text-sm font-bold";
+        titleRow.appendChild(left);
+        titleRow.appendChild(right);
+        container.appendChild(titleRow);
+
+        const card = document.createElement("div");
+        card.className = "card-brutal mb-2";
+        card.style.padding = "0.75rem 1rem";
+        card.innerHTML = `<p style="text-align:center;font-weight:900;">「${q.text}」</p>`;
+        container.appendChild(card);
+
+        const btnRow = document.createElement("div");
+        btnRow.className = "flex gap-2";
+        const btnVague = document.createElement("button");
+        btnVague.className = "btn-brutal w-full";
+        btnVague.textContent = "太空泛";
+        const btnConcrete = document.createElement("button");
+        btnConcrete.className = "btn-brutal w-full";
+        btnConcrete.textContent = "很具體";
+        btnRow.appendChild(btnVague);
+        btnRow.appendChild(btnConcrete);
+        container.appendChild(btnRow);
+
+        const feedback = document.createElement("div");
+        feedback.className = "mt-2 text-sm font-bold";
+        container.appendChild(feedback);
+
+        function handleAnswer(choiceType) {
+            const correct = q.type === choiceType;
+            if (correct) state.cvScore++;
+            feedback.textContent = (correct ? "✔ 答對了！ " : "✘ 答錯了！ ") + q.explanation;
+            feedback.style.color = correct ? "#16a34a" : "#dc2626";
+
+            setTimeout(() => {
+                state.cvIndex++;
+                if (state.cvIndex >= questions.length) {
+                    container.innerHTML = `
+                        <div class="card-brutal" style="padding:0.75rem 1rem;">
+                            <p class="font-black mb-2">遊戲完成！</p>
+                            <p class="text-sm">你的得分：${state.cvScore} / ${questions.length}</p>
+                            <button id="cv-restart" class="btn-brutal mt-2">重新挑戰</button>
+                        </div>
+                    `;
+                    $("cv-restart").onclick = () => {
+                        state.cvIndex = 0;
+                        state.cvScore = 0;
+                        renderConcreteVsVagueGame(container);
+                    };
+                } else {
+                    renderConcreteVsVagueGame(container);
+                }
+            }, 1400);
+        }
+
+        btnVague.onclick = () => handleAnswer("vague");
+        btnConcrete.onclick = () => handleAnswer("concrete");
+    }
+
+    // ---------------- Prompt Game（只做 Lv.1 關鍵詞示意） ----------------
+    function renderPromptGameShell() {
+        const root = $("prompt-content");
+        root.innerHTML = "";
+
+        const info = PROMPT_INFO_B;
+        const top = document.createElement("div");
+        top.className = "card-brutal mb-2";
+        top.style.padding = "0.75rem 1rem";
+        top.innerHTML = `
+            <p class="font-black mb-1">題目：</p>
+            <p>${info.fullTitle}</p>
+            <p class="font-black mt-2 mb-1">基本要求：</p>
+            <ul style="margin:0;padding-left:1.25rem;font-size:0.9rem;">
+                ${info.requirements.map(r => `<li>${r}</li>`).join("")}
+            </ul>
+        `;
+        root.appendChild(top);
+
+        const lvl1 = document.createElement("div");
+        lvl1.className = "card-brutal mb-2";
+        lvl1.style.padding = "0.75rem 1rem";
+        const wordsRow = document.createElement("div");
+        wordsRow.className = "flex gap-2";
+        wordsRow.style.flexWrap = "wrap";
+        info.gameWords.forEach(w => {
+            const btn = document.createElement("button");
+            btn.className = "btn-brutal text-sm";
+            btn.textContent = w.text;
+            btn.dataset.id = w.id;
+            btn.dataset.important = w.important ? "1" : "0";
+            btn.style.background = w.important ? "#facc15" : "#e5e7eb";
+            btn.onclick = () => {
+                btn.classList.toggle("selected-word");
+                if (btn.classList.contains("selected-word")) {
+                    btn.style.transform = "translateY(-2px)";
+                } else {
+                    btn.style.transform = "none";
+                }
+            };
+            wordsRow.appendChild(btn);
+        });
+        const checkBtn = document.createElement("button");
+        checkBtn.className = "btn-brutal mt-2";
+        checkBtn.textContent = "確認關鍵詞選擇";
+        const feedback = document.createElement("div");
+        feedback.className = "mt-2 text-sm font-bold";
+
+        lvl1.innerHTML = `<p class="font-black mb-1">Lv.1：找出題目中的關鍵詞</p>`;
+        lvl1.appendChild(wordsRow);
+        lvl1.appendChild(checkBtn);
+        lvl1.appendChild(feedback);
+        root.appendChild(lvl1);
+
+        checkBtn.onclick = () => {
+            const selected = Array.from(wordsRow.children).filter(b => b.classList.contains("selected-word"));
+            const correctIds = info.gameWords.filter(w => w.important).map(w => String(w.id));
+            const selectedIds = selected.map(b => b.dataset.id);
+            const allCorrect =
+                correctIds.length === selectedIds.length &&
+                correctIds.every(id => selectedIds.includes(id));
+
+            if (allCorrect) {
+                feedback.textContent = "✔ 全部關鍵詞都找對了！";
+                feedback.style.color = "#16a34a";
+            } else {
+                const correctCount = selectedIds.filter(id => correctIds.includes(id)).length;
+                feedback.textContent = `目前只找對 ${correctCount} 個，請再檢查題目關於「時間」「經歷」「目標」的要求。`;
+                feedback.style.color = "#dc2626";
+            }
+        };
+
+        // 在 Prompt 區再嵌入 Concrete vs Vague 遊戲（示意整合多模組）
+        const gameContainer = document.createElement("div");
+        gameContainer.className = "mt-4";
+        root.appendChild(gameContainer);
+        state.cvIndex = 0;
+        state.cvScore = 0;
+        renderConcreteVsVagueGame(gameContainer);
+    }
+
+    // ---------------- Checklist ----------------
+    function renderChecklist() {
+        const root = $("checklist-content");
+        root.innerHTML = "";
+
+        const titleSelf = document.createElement("p");
+        titleSelf.textContent = "寫作前：自我檢查";
+        titleSelf.className = "font-black mb-2";
+        root.appendChild(titleSelf);
+
+        CHECKLIST_ITEMS.forEach((txt, idx) => {
+            const row = document.createElement("div");
+            row.className = "checklist-item";
+            const input = document.createElement("input");
+            input.type = "checkbox";
+            input.id = `chk-${idx}`;
+            input.checked = !!state.checklistState[idx];
+            const label = document.createElement("label");
+            label.htmlFor = input.id;
+            label.textContent = txt;
+            row.appendChild(input);
+            row.appendChild(label);
+            root.appendChild(row);
+
+            input.onchange = () => {
+                state.checklistState[idx] = input.checked;
+                saveChecklist();
+            };
+        });
+    }
+
+    // ---------------- Learning Objectives Accordion ----------------
+    function renderLearningObjectives() {
+        const mount = $("lo-accordion-root");
+        mount.innerHTML = "";
+        const box = document.createElement("div");
+        box.className = "lo-accordion";
+
+        const header = document.createElement("div");
+        header.className = "lo-accordion-header";
+        header.innerHTML = `
+            <span>
+                <span style="display:inline-block;width:22px;height:22px;border-radius:999px;
+                             background:#000;color:#fff;text-align:center;font-size:0.8rem;">🎯</span>
+                <span>本單元學習目標階梯 (Learning Objectives)</span>
+            </span>
+            <span id="lo-toggle-icon">＋</span>
+        `;
+        box.appendChild(header);
+
+        const body = document.createElement("div");
+        body.className = "lo-accordion-body hidden";
+        LEARNING_OBJECTIVES.forEach(obj => {
+            const row = document.createElement("div");
+            row.className = "lo-item";
+            const tag = document.createElement("div");
+            tag.className = "lo-item-tag";
+            tag.textContent = obj.level;
+            tag.style.background = obj.required === "A_ONLY" ? "#fbbf24" : "#000";
+            tag.style.color = obj.required === "A_ONLY" ? "#000" : "#fff";
+
+            const content = document.createElement("div");
+            content.className = "lo-item-content";
+            const h4 = document.createElement("h4");
+            h4.textContent = obj.title;
+            const extra = document.createElement("span");
+            extra.className = "text-sm";
+            extra.style.marginLeft = "0.4rem";
+            extra.style.fontWeight = "700";
+            if (obj.required === "A_ONLY") {
+                extra.textContent = "A 組挑戰";
+                extra.style.color = "#b91c1c";
+            } else {
+                extra.textContent = "AB 組必修";
+                extra.style.color = "#4b5563";
+            }
+            const p = document.createElement("p");
+            p.textContent = obj.desc;
+            content.appendChild(h4);
+            content.appendChild(extra);
+            content.appendChild(p);
+
+            row.appendChild(tag);
+            row.appendChild(content);
+            body.appendChild(row);
+        });
+        box.appendChild(body);
+        mount.appendChild(box);
+
+        header.onclick = () => {
+            body.classList.toggle("hidden");
+            $("lo-toggle-icon").textContent = body.classList.contains("hidden") ? "＋" : "－";
+        };
+    }
+
+    // ---------------- Quiz ----------------
+    function renderQuiz() {
+        const root = $("quiz-content");
+        root.innerHTML = "";
+        const questions = state.activeGroup === "A" ? QUIZ_QUESTIONS_A : QUIZ_QUESTIONS_B;
+
+        if (state.quizFinished) {
+            const card = document.createElement("div");
+            card.className = "card-brutal";
+            card.style.padding = "0.75rem 1rem";
+            card.innerHTML = `
+                <p class="font-black mb-2">測驗完成！</p>
+                <p class="text-sm">你的得分：${state.quizScore} / ${questions.length}</p>
+                <button id="quiz-restart" class="btn-brutal mt-2">重新開始</button>
+            `;
+            root.appendChild(card);
+            $("quiz-restart").onclick = () => {
+                state.quizIndex = 0;
+                state.quizScore = 0;
+                state.quizFinished = false;
+                renderQuiz();
+            };
+            return;
+        }
+
+        const q = questions[state.quizIndex];
+        const card = document.createElement("div");
+        card.className = "card-brutal";
+        card.style.padding = "0.75rem 1rem";
+
+        const head = document.createElement("div");
+        head.className = "flex justify-between items-center mb-2";
+        head.innerHTML = `
+            <span class="text-sm font-bold">第 ${state.quizIndex + 1} 題 / 共 ${questions.length} 題</span>
+            <span class="text-sm font-bold">目前得分：${state.quizScore}</span>
+        `;
+        card.appendChild(head);
+
+        const p = document.createElement("p");
+        p.textContent = q.question;
+        p.className = "font-bold mb-2";
+        card.appendChild(p);
+
+        const optWrap = document.createElement("div");
+        q.options.forEach((opt, idx) => {
+            const btn = document.createElement("button");
+            btn.className = "btn-brutal w-full mb-2 text-left";
+            btn.textContent = opt.text;
+            btn.onclick = () => {
+                if (opt.isCorrect) {
+                    btn.style.background = "#bbf7d0";
+                    state.quizScore++;
+                } else {
+                    btn.style.background = "#fecaca";
+                    const correctBtn = optWrap.children[
+                        q.options.findIndex(o => o.isCorrect)
+                    ];
+                    if (correctBtn) correctBtn.style.background = "#bbf7d0";
+                }
+                setTimeout(() => {
+                    state.quizIndex++;
+                    if (state.quizIndex >= questions.length) {
+                        state.quizFinished = true;
+                    }
+                    renderQuiz();
+                }, 1200);
+            };
+            optWrap.appendChild(btn);
+        });
+        card.appendChild(optWrap);
+
+        const exp = document.createElement("p");
+        exp.className = "text-sm mt-2";
+        exp.style.fontStyle = "italic";
+        exp.textContent = "答題後將自動顯示正確答案與解析。";
+        card.appendChild(exp);
+
+        root.appendChild(card);
+    }
+
+    // ---------------- Group 切換 ----------------
+    function setActiveGroup(group) {
+        if (state.activeGroup === group) return;
+        state.activeGroup = group;
+
+        $("group-A").classList.toggle("active", group === "A");
+        $("group-B").classList.toggle("active", group === "B");
+        $("current-group-label").textContent =
+            `當前模式：${group === "A" ? "A 組挑戰" : "B 組通階"}`;
+
+        // 重新載入 checklist 狀態
+        loadChecklist();
+        renderChecklist();
+        renderQuiz();
+
+        // Prompt 遊戲重置
+        state.cvIndex = 0;
+        state.cvScore = 0;
+        renderPromptGameShell();
+    }
+
+    // ---------------- Init ----------------
+    function bindEvents() {
+        $("nav-toggle").onclick = () => {
+            state.isNavOpen = !state.isNavOpen;
+            updateLayoutForSidebar();
+        };
+
+        $("group-A").onclick = () => setActiveGroup("A");
+        $("group-B").onclick = () => setActiveGroup("B");
+
+        $("fontSlider").oninput = (e) => {
+            state.fontSize = parseInt(e.target.value, 10);
+            applyFontSize();
+        };
+
+        $("highlight-toggle").onclick = () => {
+            state.showHighlights = !state.showHighlights;
+            applyHighlightVisibility();
+        };
+    }
+
+    function init() {
+        // Layout & sidebar
+        renderSidebar();
+        updateLayoutForSidebar();
+
+        // Font & highlight
+        applyFontSize();
+        applyHighlightVisibility();
+
+        // Timer
+        state.timerTotalSeconds = 5 * 60;
+        state.timerLeft = state.timerTotalSeconds;
+        renderTimer(true);
+        initTimerDrag();
+
+        // Checklist
+        loadChecklist();
+        renderChecklist();
+
+        // Learning objectives
+        renderLearningObjectives();
+
+        // Prompt + Concrete vs Vague
+        renderPromptGameShell();
+
+        // Quiz
+        renderQuiz();
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        bindEvents();
+        init();
+    });
+})();
+</script>
+</body>
+</html>
